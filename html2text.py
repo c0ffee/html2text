@@ -733,7 +733,11 @@ class HTML2Text(HTMLParser.HTMLParser):
         for para in text.split("\n"):
             if len(para) > 0:
                 if not skipwrap(para):
-                    result += "\n".join(wrap(para, self.body_width))
+                    stripped = para.lstrip()
+                    if ordered_list_matcher.match(stripped) or unordered_list_matcher.match(stripped):
+                        result += "\n".join(wrap(para, self.body_width,subsequent_indent="  "))
+                    else:
+                        result += "\n".join(wrap(para, self.body_width))
                     if para.endswith('  '):
                         result += "  \n"
                         newlines = 1
@@ -789,14 +793,14 @@ def skipwrap(para):
     stripped = para.lstrip()
     if stripped[0:2] == "--" and len(stripped) > 2 and stripped[2] != "-":
         return False
-    # I'm not sure what this is for; I thought it was to detect lists, but there's
-    # a <br>-inside-<span> case in one of the tests that also depends upon it.
-    if stripped[0:1] == '-' or stripped[0:1] == '*':
-        return True
     # If the text begins with a single -, *, or +, followed by a space, or an integer,
     # followed by a ., followed by a space (in either case optionally preceeded by
     # whitespace), it's a list; don't wrap.
     if ordered_list_matcher.match(stripped) or unordered_list_matcher.match(stripped):
+        return False
+    # I'm not sure what this is for; I thought it was to detect lists, but there's
+    # a <br>-inside-<span> case in one of the tests that also depends upon it.
+    if stripped[0:1] == '-' or stripped[0:1] == '*':
         return True
     return False
 
